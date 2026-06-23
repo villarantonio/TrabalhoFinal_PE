@@ -851,6 +851,86 @@ def build_regressao(doc, df):
         'dado que o modelo e global (nao especifico por tipo estelar).')
 
 
+def build_referencias(doc):
+    add_heading(doc, 'REFERENCIAS')
+
+    refs = [
+        # Dataset
+        'DEEPU1109. Star Dataset to Predict Star Types. Kaggle, 2021. '
+        'Disponivel em: https://www.kaggle.com/datasets/deepu1109/star-dataset. '
+        'Acesso em: jun. 2026.',
+
+        # Estatistica descritiva (livro-texto principal da disciplina)
+        'BUSSAB, Wilton O.; MORETTIN, Pedro A. Estatistica Basica. '
+        '9. ed. Sao Paulo: Saraiva Educacao, 2017. 576 p. ISBN 978-85-472-0063-6.',
+
+        # Livro de referencia para regressao e correlacao
+        'MONTGOMERY, Douglas C.; RUNGER, George C. Estatistica Aplicada e '
+        'Probabilidade para Engenheiros. 6. ed. Rio de Janeiro: LTC, 2016. 629 p. '
+        'ISBN 978-85-216-3360-5.',
+
+        # Astronomia: classificacao estelar e diagrama HR
+        'CARROLL, Bradley W.; OSTLIE, Dale A. An Introduction to Modern Astrophysics. '
+        '2. ed. Cambridge: Cambridge University Press, 2017. 1359 p. '
+        'ISBN 978-1-108-42216-1.',
+
+        # Sistema de classificacao espectral MK
+        'MORGAN, William W.; KEENAN, Philip C.; KELLMAN, Edith. An Atlas of Stellar '
+        'Spectra, with an Outline of Spectral Classification. Chicago: University of '
+        'Chicago Press, 1943.',
+
+        # NumPy
+        'HARRIS, Charles R. et al. Array programming with NumPy. '
+        'Nature, v. 585, n. 7825, p. 357-362, set. 2020. '
+        'DOI: 10.1038/s41586-020-2649-2.',
+
+        # pandas
+        'MCKINNEY, Wes. Data Structures for Statistical Computing in Python. '
+        'In: PYTHON IN SCIENCE CONFERENCE, 9., 2010, Austin. '
+        'Proceedings... Austin: SciPy, 2010. p. 56-61. '
+        'DOI: 10.25080/Majora-92bf1922-00a.',
+
+        # matplotlib
+        'HUNTER, John D. Matplotlib: A 2D Graphics Environment. '
+        'Computing in Science & Engineering, v. 9, n. 3, p. 90-95, 2007. '
+        'DOI: 10.1109/MCSE.2007.55.',
+
+        # seaborn
+        'WASKOM, Michael. seaborn: statistical data visualization. '
+        'Journal of Open Source Software, v. 6, n. 60, p. 3021, 2021. '
+        'DOI: 10.21105/joss.03021.',
+
+        # SciPy
+        'VIRTANEN, Pauli et al. SciPy 1.0: Fundamental Algorithms for Scientific '
+        'Computing in Python. Nature Methods, v. 17, p. 261-272, 2020. '
+        'DOI: 10.1038/s41592-019-0686-2.',
+
+        # python-docx
+        'PYTHON-DOCX CONTRIBUTORS. python-docx: Create and update Microsoft Word '
+        '.docx files. Versao 1.2.0. GitHub, 2024. '
+        'Disponivel em: https://github.com/python-openxml/python-docx. '
+        'Acesso em: jun. 2026.',
+
+        # Python
+        'PYTHON SOFTWARE FOUNDATION. Python Language Reference. Versao 3.14. '
+        'Wilmington, DE: PSF, 2025. '
+        'Disponivel em: https://www.python.org. Acesso em: jun. 2026.',
+    ]
+
+    for ref in refs:
+        p = doc.add_paragraph(style='Normal')
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+        p.paragraph_format.line_spacing = 1.5
+        p.paragraph_format.space_after  = Pt(6)
+        # Recuo ABNT: primeira linha alinhada, demais com recuo de 1,25 cm
+        p.paragraph_format.first_line_indent = Cm(0)
+        p.paragraph_format.left_indent       = Cm(0)
+        run = p.add_run(ref)
+        run.font.name = FONT_NAME
+        run.font.size = Pt(12)
+
+
 def build_conclusao(doc):
     add_heading(doc, '8. CONCLUSAO')
     add_paragraph(doc,
@@ -899,6 +979,7 @@ def main():
     build_diagrama_hr(doc);     print('  [OK] Diagrama HR')
     build_regressao(doc, df);   print('  [OK] Correlacao e regressao')
     build_conclusao(doc);       print('  [OK] Conclusao')
+    build_referencias(doc);     print('  [OK] Referencias')
 
     doc.save(DOCX_OUT)
     print(f'\nDocumento salvo em: {DOCX_OUT}')

@@ -16,9 +16,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-sys.path.insert(0, os.path.dirname(__file__))
-from criar_variaveis import add_variaveis
-
 # ── Configurações de caminho ──────────────────────────────────────────────────
 BASE_DIR   = os.path.join(os.path.dirname(__file__), '..')
 DATA_FILE  = os.path.join(BASE_DIR, '6 class csv.csv')
@@ -41,7 +38,6 @@ PALETTE = sns.color_palette('tab10', 6)
 # ── Carregamento e preparo dos dados ─────────────────────────────────────────
 df = pd.read_csv(DATA_FILE)
 df['Star type label'] = df['Star type'].map(STAR_TYPE_NAMES)
-df = add_variaveis(df)
 
 
 # ── Padronização de Star color ────────────────────────────────────────────────
@@ -195,10 +191,10 @@ plt.close()
 # ══════════════════════════════════════════════════════════════════════════════
 # 4. IS_GIANT
 # ══════════════════════════════════════════════════════════════════════════════
-giant_series = df['is_Giant'].map({0: 'Não Gigante', 1: 'Gigante'})
-tabela_giant = tabela_frequencias(giant_series, 'is_Giant (Gigante vs Não Gigante)', acumulada=False)
+df['is_Giant'] = df['Star type'].apply(lambda x: 'Gigante' if x >= 3 else 'Não Gigante')
+tabela_giant = tabela_frequencias(df['is_Giant'], 'is_Giant (Gigante vs Não Gigante)', acumulada=False)
 
-giant_ord = giant_series.value_counts().reindex(['Gigante', 'Não Gigante'], fill_value=0)
+giant_ord = df['is_Giant'].value_counts().reindex(['Gigante', 'Não Gigante'], fill_value=0)
 fig, ax = plt.subplots(figsize=(6, 4))
 ax.bar(giant_ord.index, giant_ord.values,
        color=sns.color_palette('Set2', 2))

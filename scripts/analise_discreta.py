@@ -190,17 +190,16 @@ plt.savefig(os.path.join(OUTPUT_DIR, 'boxplot_temperatura.png'), dpi=150)
 plt.close()
 
 # ── Separatrizes por tipo estelar — Temperature (K) ──────────────────────────
-GRAFICOS_DIR = os.path.join(BASE_DIR, 'graficos')
 rows = []
 for t, nome in STAR_TYPE_NAMES.items():
     s = df[df['Star type'] == t]['Temperature (K)']
     q1_, q3_ = s.quantile(0.25), s.quantile(0.75)
-    rows.append({'Tipo': nome, 'Q1': q1_, 'Mediana': s.median(), 'Q3': q3_, 'IIQ': q3_ - q1_})
+    rows.append({'Tipo Estelar': nome, 'Q1': q1_, 'Mediana': s.median(), 'Q3': q3_, 'IIQ': q3_ - q1_})
 sep_temp = pd.DataFrame(rows)
 print('\n' + '='*60)
 print('  Separatrizes por Tipo Estelar — Temperature (K)')
 print('='*60)
 print(sep_temp.to_string(index=False))
-sep_temp.to_csv(os.path.join(GRAFICOS_DIR, 'separatrizes_temperatura.csv'), index=False)
+sep_temp.to_csv(os.path.join(OUTPUT_DIR, 'separatrizes_temperatura.csv'), index=False)
 
 print(f'\nGráficos salvos em: {OUTPUT_DIR}')

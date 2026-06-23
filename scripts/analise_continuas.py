@@ -24,14 +24,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 
-sys.path.insert(0, os.path.dirname(__file__))
-from criar_variaveis import add_variaveis
-
 # ── Configurações de caminho ──────────────────────────────────────────────────
 BASE_DIR   = os.path.join(os.path.dirname(__file__), '..')
 DATA_FILE  = os.path.join(BASE_DIR, '6 class csv.csv')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'graficos', 'continuas')
-GRAFICOS_DIR = os.path.join(BASE_DIR, 'graficos')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 STAR_TYPE_NAMES = {
@@ -47,17 +43,17 @@ PALETTE = sns.color_palette('tab10', 6)
 # ── Carregamento e preparo dos dados ─────────────────────────────────────────
 df = pd.read_csv(DATA_FILE)
 df['Star type label'] = df['Star type'].map(STAR_TYPE_NAMES)
-df = add_variaveis(df)
 
 # Substituir zeros por NaN antes do log para evitar -inf (log(0) indefinido)
 df['Luminosity(L/Lo)'] = df['Luminosity(L/Lo)'].replace(0, np.nan)
 df['Radius(R/Ro)']     = df['Radius(R/Ro)'].replace(0, np.nan)
 
 # Colunas transformadas em log₁₀
-df['log_Luminosity'] = np.log10(df['Luminosity(L/Lo)'])
-df['log_Radius']     = np.log10(df['Radius(R/Ro)'])
-df['Luminosity_per_Radius2'] = df['Luminosity_per_Radius2'].replace(0, np.nan)
-df['log_LumPerRad2'] = np.log10(df['Luminosity_per_Radius2'])
+df['log_Luminosity']         = np.log10(df['Luminosity(L/Lo)'])
+df['log_Radius']             = np.log10(df['Radius(R/Ro)'])
+df['log10_Temperature']      = np.log10(df['Temperature (K)'])
+df['Luminosity_per_Radius2'] = df['Luminosity(L/Lo)'] / (df['Radius(R/Ro)'] ** 2)
+df['log_LperR2']             = np.log10(df['Luminosity_per_Radius2'].replace(0, np.nan))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -176,14 +172,14 @@ def tabela_separatrizes(df: pd.DataFrame, col: str, nome: str, arquivo: str) -> 
     for t, nm in STAR_TYPE_NAMES.items():
         s = df[df['Star type'] == t][col].dropna()
         q1_, q3_ = s.quantile(0.25), s.quantile(0.75)
-        rows.append({'Tipo': nm, 'Q1': round(q1_, 4), 'Mediana': round(s.median(), 4),
+        rows.append({'Tipo Estelar': nm, 'Q1': round(q1_, 4), 'Mediana': round(s.median(), 4),
                      'Q3': round(q3_, 4), 'IIQ': round(q3_ - q1_, 4)})
     sep = pd.DataFrame(rows)
     print(f'\n{"="*60}')
     print(f'  Separatrizes por Tipo Estelar — {nome}')
     print(f'{"="*60}')
     print(sep.to_string(index=False))
-    sep.to_csv(os.path.join(GRAFICOS_DIR, arquivo), index=False)
+    sep.to_csv(os.path.join(OUTPUT_DIR, arquivo), index=False)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -200,7 +196,7 @@ histograma_kde(df['Luminosity(L/Lo)'],
                'Luminosity (L/Lo)', 'hist_luminosity.png', 'Luminosidade (L/Lo)')
 boxplot_por_tipo(df, 'Luminosity(L/Lo)',
                  'Luminosity (L/Lo)', 'boxplot_luminosity.png', 'Luminosidade (L/Lo)')
-tabela_separatrizes(df, 'Luminosity(L/Lo)', 'Luminosity (L/Lo)', 'separatrizes_luminosidade.csv')
+tabela_separatrizes(df, 'Luminosity(L/Lo)', 'Luminosity (L/Lo)', 'separatrizes_luminosity.csv')
 
 # ── Luminosity — log₁₀ ────────────────────────────────────────────────────────
 # A escala log lineariza a distribuição fortemente assimétrica da luminosidade
@@ -213,7 +209,7 @@ histograma_kde(df['log_Luminosity'],
                'log₁₀(Luminosity)', 'hist_log_luminosity.png', 'log₁₀(Luminosidade)')
 boxplot_por_tipo(df, 'log_Luminosity',
                  'log₁₀(Luminosity)', 'boxplot_log_luminosity.png', 'log₁₀(Luminosidade)')
-tabela_separatrizes(df, 'log_Luminosity', 'log₁₀(Luminosity)', 'separatrizes_log_luminosidade.csv')
+tabela_separatrizes(df, 'log_Luminosity', 'log₁₀(Luminosity)', 'separatrizes_log_luminosity.csv')
 
 # ── Radius — escala original ──────────────────────────────────────────────────
 print('\n' + '▓'*70)
@@ -225,7 +221,7 @@ histograma_kde(df['Radius(R/Ro)'],
                'Radius (R/Ro)', 'hist_radius.png', 'Raio (R/Ro)')
 boxplot_por_tipo(df, 'Radius(R/Ro)',
                  'Radius (R/Ro)', 'boxplot_radius.png', 'Raio (R/Ro)')
-tabela_separatrizes(df, 'Radius(R/Ro)', 'Radius (R/Ro)', 'separatrizes_raio.csv')
+tabela_separatrizes(df, 'Radius(R/Ro)', 'Radius (R/Ro)', 'separatrizes_radius.csv')
 
 # ── Radius — log₁₀ ────────────────────────────────────────────────────────────
 print('\n' + '▓'*70)
@@ -237,7 +233,7 @@ histograma_kde(df['log_Radius'],
                'log₁₀(Radius)', 'hist_log_radius.png', 'log₁₀(Raio)')
 boxplot_por_tipo(df, 'log_Radius',
                  'log₁₀(Radius)', 'boxplot_log_radius.png', 'log₁₀(Raio)')
-tabela_separatrizes(df, 'log_Radius', 'log₁₀(Radius)', 'separatrizes_log_raio.csv')
+tabela_separatrizes(df, 'log_Radius', 'log₁₀(Radius)', 'separatrizes_log_radius.csv')
 
 # ── Absolute magnitude (Mv) ───────────────────────────────────────────────────
 # Magnitude: escala invertida — valores menores = estrelas mais brilhantes
@@ -259,10 +255,10 @@ print('▓'*70)
 tabela_frequencias(df['log10_Temperature'],  'log₁₀(Temperature)')
 medidas_descritivas(df['log10_Temperature'], 'log₁₀(Temperature)')
 histograma_kde(df['log10_Temperature'],
-               'log₁₀(Temperature)', 'hist_log10_temperature.png', 'log₁₀(Temperatura)')
+               'log₁₀(Temperature)', 'hist_log_temperature.png', 'log₁₀(Temperatura)')
 boxplot_por_tipo(df, 'log10_Temperature',
-                 'log₁₀(Temperature)', 'boxplot_log10_temperature.png', 'log₁₀(Temperatura)')
-tabela_separatrizes(df, 'log10_Temperature', 'log₁₀(Temperature)', 'separatrizes_log10_temperatura.csv')
+                 'log₁₀(Temperature)', 'boxplot_log_temperature.png', 'log₁₀(Temperatura)')
+tabela_separatrizes(df, 'log10_Temperature', 'log₁₀(Temperature)', 'separatrizes_log_temperature.csv')
 
 # ── Luminosity / Radius² — escala original ────────────────────────────────────
 print('\n' + '▓'*70)
@@ -271,21 +267,21 @@ print('▓'*70)
 tabela_frequencias(df['Luminosity_per_Radius2'],  'Luminosity / Radius² (L/Lo·R⁻²)')
 medidas_descritivas(df['Luminosity_per_Radius2'], 'Luminosity / Radius² (L/Lo·R⁻²)')
 histograma_kde(df['Luminosity_per_Radius2'],
-               'Luminosity / Radius²', 'hist_lum_rad2.png', 'Luminosidade / Raio² (L/Lo·R⁻²)')
+               'Luminosity / Radius²', 'hist_lpr2.png', 'Luminosidade / Raio² (L/Lo·R⁻²)')
 boxplot_por_tipo(df, 'Luminosity_per_Radius2',
-                 'Luminosity / Radius²', 'boxplot_lum_rad2.png', 'Luminosidade / Raio² (L/Lo·R⁻²)')
-tabela_separatrizes(df, 'Luminosity_per_Radius2', 'Luminosity / Radius²', 'separatrizes_lum_rad2.csv')
+                 'Luminosity / Radius²', 'boxplot_lpr2.png', 'Luminosidade / Raio² (L/Lo·R⁻²)')
+tabela_separatrizes(df, 'Luminosity_per_Radius2', 'Luminosity / Radius²', 'separatrizes_lpr2.csv')
 
 # ── Luminosity / Radius² — log₁₀ ─────────────────────────────────────────────
 print('\n' + '▓'*70)
 print('  log₁₀(LUMINOSIDADE / RAIO²) — escala logarítmica')
 print('▓'*70)
-tabela_frequencias(df['log_LumPerRad2'],  'log₁₀(Luminosity / Radius²)')
-medidas_descritivas(df['log_LumPerRad2'], 'log₁₀(Luminosity / Radius²)')
-histograma_kde(df['log_LumPerRad2'],
-               'log₁₀(Luminosity / Radius²)', 'hist_log_lum_rad2.png', 'log₁₀(Lum. / Raio²)')
-boxplot_por_tipo(df, 'log_LumPerRad2',
-                 'log₁₀(Luminosity / Radius²)', 'boxplot_log_lum_rad2.png', 'log₁₀(Lum. / Raio²)')
-tabela_separatrizes(df, 'log_LumPerRad2', 'log₁₀(Luminosity / Radius²)', 'separatrizes_log_lum_rad2.csv')
+tabela_frequencias(df['log_LperR2'],  'log₁₀(Luminosity / Radius²)')
+medidas_descritivas(df['log_LperR2'], 'log₁₀(Luminosity / Radius²)')
+histograma_kde(df['log_LperR2'],
+               'log₁₀(Luminosity / Radius²)', 'hist_log_lpr2.png', 'log₁₀(Lum. / Raio²)')
+boxplot_por_tipo(df, 'log_LperR2',
+                 'log₁₀(Luminosity / Radius²)', 'boxplot_log_lpr2.png', 'log₁₀(Lum. / Raio²)')
+tabela_separatrizes(df, 'log_LperR2', 'log₁₀(Luminosity / Radius²)', 'separatrizes_log_lpr2.csv')
 
 print(f'\nGráficos salvos em: {OUTPUT_DIR}')

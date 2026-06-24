@@ -1,4 +1,8 @@
-# Análise Estatística Descritiva — Star Dataset
+# Análise estatística descritiva do Star Dataset
+
+**Grupo**: Antonio Henrique Q. V. Lopes, Jamily V. Gonçalves e Júlia P. Souza   
+
+---
 
 **Disciplina:** Probabilidade e Estatística A — UFG  
 **Dataset:** Star Dataset to Predict Star Types (Kaggle)  

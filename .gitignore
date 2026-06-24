@@ -1,3 +1,9 @@
 # Relatórios e roteiros
 *.docx
 *.pdf
+
+# Ambiente virtual
+venv/
+.venv/
+__pycache__/
+*.pyc

@@ -67,7 +67,7 @@ df['Star color std'] = df['Star color'].apply(padronizar_cor)
 
 # ── Função: tabela de frequências genérica ────────────────────────────────────
 def tabela_frequencias(series: pd.Series, nome: str,
-                       ordem: list = None) -> pd.DataFrame:
+                       ordem: list = None, acumulada: bool = True) -> pd.DataFrame:
     """Retorna e imprime tabela com freq. absoluta, relativa, acumuladas."""
     contagem = series.value_counts()
     if ordem:
@@ -79,13 +79,16 @@ def tabela_frequencias(series: pd.Series, nome: str,
     freq_acum  = contagem.cumsum()
     frel_acum  = freq_rel.cumsum().round(2)
 
-    tabela = pd.DataFrame({
-        'Categoria':              contagem.index,
-        'Freq. Absoluta':         contagem.values,
-        'Freq. Relativa (%)':     freq_rel.values,
-        'Freq. Abs. Acumulada':   freq_acum.values,
-        'Freq. Rel. Acumulada (%)': frel_acum.values,
-    })
+    dados = {
+        'Categoria':          contagem.index,
+        'Freq. Absoluta':     contagem.values,
+        'Freq. Relativa (%)': freq_rel.values,
+    }
+    if acumulada:
+        dados['Freq. Abs. Acumulada']   = freq_acum.values
+        dados['Freq. Rel. Acumulada (%)'] = frel_acum.values
+
+    tabela = pd.DataFrame(dados)
 
     print(f'\n{"="*65}')
     print(f'  Tabela de Frequências — {nome}')
@@ -97,7 +100,7 @@ def tabela_frequencias(series: pd.Series, nome: str,
 # ══════════════════════════════════════════════════════════════════════════════
 # 1. STAR COLOR
 # ══════════════════════════════════════════════════════════════════════════════
-tabela_cor = tabela_frequencias(df['Star color std'], 'Star color (padronizado)')
+tabela_cor = tabela_frequencias(df['Star color std'], 'Star color (padronizado)', acumulada=False)
 
 # — Gráfico de barras —
 cores_ord = df['Star color std'].value_counts()
@@ -183,6 +186,25 @@ ax.legend(handles, ORDEM_TIPOS, title='Tipo Estelar',
           bbox_to_anchor=(1.01, 1), loc='upper left')
 plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'barras_star_type.png'), dpi=150)
+plt.close()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 4. IS_GIANT
+# ══════════════════════════════════════════════════════════════════════════════
+df['is_Giant'] = df['Star type'].apply(lambda x: 'Gigante' if x >= 3 else 'Não Gigante')
+tabela_giant = tabela_frequencias(df['is_Giant'], 'is_Giant (Gigante vs Não Gigante)', acumulada=False)
+
+giant_ord = df['is_Giant'].value_counts().reindex(['Gigante', 'Não Gigante'], fill_value=0)
+fig, ax = plt.subplots(figsize=(6, 4))
+ax.bar(giant_ord.index, giant_ord.values,
+       color=sns.color_palette('Set2', 2))
+ax.set_title('Distribuição de is_Giant', fontsize=14)
+ax.set_xlabel('Categoria')
+ax.set_ylabel('Frequência Absoluta')
+for i, v in enumerate(giant_ord.values):
+    ax.text(i, v + 0.4, str(v), ha='center', fontsize=9)
+plt.tight_layout()
+plt.savefig(os.path.join(OUTPUT_DIR, 'barras_is_giant.png'), dpi=150)
 plt.close()
 
 print(f'\nGráficos salvos em: {OUTPUT_DIR}')

@@ -81,9 +81,16 @@ def load_data():
     df["Star color std"] = df["Star color"].apply(padronizar_cor)
     df["Star type label"] = df["Star type"].map(STAR_TYPE_NAMES)
 
-    # Log-transformações
+    # Log-transformações originais
     df["log_Luminosity"] = np.log10(df["Luminosity(L/Lo)"].replace(0, np.nan))
     df["log_Radius"]     = np.log10(df["Radius(R/Ro)"].replace(0, np.nan))
+
+    # Variáveis derivadas (novas)
+    df["log10_Temperature"]      = np.log10(df["Temperature (K)"])
+    df["Luminosity_per_Radius2"] = df["Luminosity(L/Lo)"] / (df["Radius(R/Ro)"] ** 2)
+    df["is_Giant"]               = df["Star type"].apply(
+        lambda t: "Gigante" if t >= 3 else "Não Gigante"
+    )
 
     # Faixas de temperatura
     df["Temp Categoria"] = pd.cut(
@@ -221,21 +228,24 @@ if secao == "📋 Visão Geral do Dataset":
     st.header("📋 Visão Geral do Dataset")
     st.markdown(
         "O **Star Classification Dataset** contém medições de **240 estrelas** "
-        "distribuídas igualmente entre 6 tipos estelares (40 por tipo), "
-        "abrangendo 7 variáveis físicas e de classificação."
+        "distribuídas igualmente entre 6 tipos estelares (40 por tipo). "
+        "Foram analisadas **10 variáveis**: 7 originais do dataset e 3 derivadas."
     )
 
     # Descrição das variáveis
     st.subheader("Variáveis do Dataset")
     vars_df = pd.DataFrame([
-        ["Temperature (K)",        "Quantitativa Discreta",    "Temperatura superficial em Kelvin"],
-        ["Luminosity (L/Lo)",      "Quantitativa Contínua",    "Luminosidade relativa ao Sol"],
-        ["Radius (R/Ro)",          "Quantitativa Contínua",    "Raio relativo ao Sol"],
-        ["Absolute magnitude(Mv)", "Quantitativa Contínua",    "Magnitude absoluta (escala invertida: menor = mais brilhante)"],
-        ["Star type",              "Qualitativa Ordinal",       "Tipo estelar (0=Anã Marrom … 5=Hipergigante)"],
-        ["Star color",             "Qualitativa Nominal",       "Cor observada da estrela"],
-        ["Spectral Class",         "Qualitativa Ordinal",       "Classe espectral de Morgan-Keenan (O→M)"],
-    ], columns=["Variável", "Tipo", "Descrição"])
+        ["Temperature (K)",        "Quant. Discreta",  "Original",  "Temperatura superficial em Kelvin"],
+        ["Luminosity (L/Lo)",      "Quant. Contínua",  "Original",  "Luminosidade relativa ao Sol"],
+        ["Radius (R/Ro)",          "Quant. Contínua",  "Original",  "Raio relativo ao Sol"],
+        ["Absolute magnitude(Mv)", "Quant. Contínua",  "Original",  "Magnitude absoluta (escala invertida)"],
+        ["Star type",              "Qual. Ordinal",     "Original",  "Tipo estelar (0=Anã Marrom … 5=Hipergigante)"],
+        ["Star color",             "Qual. Nominal",     "Original",  "Cor observada da estrela"],
+        ["Spectral Class",         "Qual. Ordinal",     "Original",  "Classe espectral de Morgan-Keenan (O→M)"],
+        ["log10_Temperature",      "Quant. Contínua",  "Derivada",  "log₁₀(Temperature) — lineariza distribuição assimétrica"],
+        ["Luminosity_per_Radius²", "Quant. Contínua",  "Derivada",  "L/R² — proxy de temperatura via Lei de Stefan-Boltzmann"],
+        ["is_Giant",               "Qual. Nominal",     "Derivada",  "Gigante (tipo ≥ 3) ou Não Gigante (tipo < 3)"],
+    ], columns=["Variável", "Tipo", "Origem", "Descrição"])
     st.dataframe(vars_df, use_container_width=True, hide_index=True)
 
     # Filtros
@@ -262,10 +272,14 @@ if secao == "📋 Visão Geral do Dataset":
     )
     df_filtrado = df[mask].head(n_linhas)[[
         "Temperature (K)", "Luminosity(L/Lo)", "Radius(R/Ro)",
-        "Absolute magnitude(Mv)", "Star type label", "Star color std", "Spectral Class"
+        "Absolute magnitude(Mv)", "Star type label", "Star color std", "Spectral Class",
+        "log10_Temperature", "Luminosity_per_Radius2", "is_Giant",
     ]].rename(columns={
-        "Star type label": "Tipo Estelar",
-        "Star color std":  "Cor (padronizada)",
+        "Star type label":       "Tipo Estelar",
+        "Star color std":        "Cor (padronizada)",
+        "log10_Temperature":     "log₁₀(Temp)",
+        "Luminosity_per_Radius2":"L/R²",
+        "is_Giant":              "Gigante?",
     })
 
     st.caption(f"Mostrando {len(df_filtrado)} de {mask.sum()} registros filtrados.")
@@ -291,11 +305,11 @@ if secao == "📋 Visão Geral do Dataset":
 elif secao == "🏷️ Variáveis Qualitativas":
     st.header("🏷️ Variáveis Qualitativas")
     st.markdown(
-        "Três variáveis qualitativas foram analisadas: **Star color** (nominal), "
-        "**Spectral Class** (ordinal) e **Star type** (ordinal)."
+        "Quatro variáveis qualitativas foram analisadas: **Star color** (nominal), "
+        "**Spectral Class** (ordinal), **Star type** (ordinal) e **is_Giant** (nominal binária derivada)."
     )
 
-    aba1, aba2, aba3 = st.tabs(["🎨 Star Color", "🔭 Spectral Class", "⭐ Star Type"])
+    aba1, aba2, aba3, aba4 = st.tabs(["🎨 Star Color", "🔭 Spectral Class", "⭐ Star Type", "🔵 is_Giant"])
 
     # ── Star Color ────────────────────────────────────────────────────────────
     with aba1:
@@ -404,6 +418,42 @@ elif secao == "🏷️ Variáveis Qualitativas":
         with col_t:
             st.markdown("**Tabela de Frequências**")
             st.dataframe(tabela_type, use_container_width=True, hide_index=True)
+
+    # ── is_Giant ──────────────────────────────────────────────────────────────
+    with aba4:
+        st.subheader("Classificação Binária — is_Giant")
+        st.markdown(
+            "Variável derivada que agrupa os 6 tipos estelares em dois grupos: "
+            "**Gigante** (tipos 3, 4, 5 — Seq. Principal, Supergigante, Hipergigante) "
+            "e **Não Gigante** (tipos 0, 1, 2 — Anã Marrom, Anã Vermelha, Anã Branca). "
+            "O dataset é perfeitamente balanceado: **120 estrelas em cada grupo**."
+        )
+
+        tabela_giant = tabela_freq_qualitativa(df["is_Giant"], ordem=["Gigante", "Não Gigante"])
+
+        col_g, col_t = st.columns([3, 2])
+        with col_g:
+            fig = px.bar(
+                tabela_giant,
+                x="Categoria", y="Freq. Absoluta",
+                text="Freq. Absoluta",
+                color="Categoria",
+                color_discrete_map={"Gigante": "#EF553B", "Não Gigante": "#636EFA"},
+                title="Distribuição — is_Giant",
+                labels={"Categoria": "", "Freq. Absoluta": "Frequência"},
+            )
+            fig.update_traces(textposition="outside")
+            fig.update_layout(showlegend=False, height=380)
+            st.plotly_chart(fig, use_container_width=True)
+        with col_t:
+            st.markdown("**Tabela de Frequências**")
+            st.dataframe(tabela_giant, use_container_width=True, hide_index=True)
+
+        st.markdown(
+            "**Motivação:** simplificar comparações entre estrelas compactas (anãs) "
+            "e estrelas expandidas (gigantes e supergigantes), que diferem sistematicamente "
+            "em luminosidade, raio e temperatura."
+        )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -518,16 +568,19 @@ elif secao == "🌡️ Variável Discreta — Temperatura":
 elif secao == "📊 Variáveis Contínuas":
     st.header("📊 Variáveis Contínuas")
     st.markdown(
-        "Três variáveis contínuas foram analisadas: **Luminosidade**, **Raio** e **Magnitude Absoluta**. "
-        "Para Luminosidade e Raio, a forte assimetria justifica análise adicional na escala **log₁₀**."
+        "Foram analisadas **7 variáveis contínuas**: 5 originais/log-transformadas "
+        "(Luminosidade, Raio e Magnitude Absoluta, com versões log₁₀ para as duas primeiras) "
+        "e 2 derivadas (**log₁₀(Temperatura)** e **Luminosity/Radius²**)."
     )
 
     var_opcoes = {
-        "Luminosity(L/Lo)":          ("Luminosity (L/Lo)",      "Luminosidade (L/Lo)"),
-        "log_Luminosity":            ("log₁₀(Luminosity)",      "log₁₀(Luminosidade)"),
-        "Radius(R/Ro)":              ("Radius (R/Ro)",          "Raio (R/Ro)"),
-        "log_Radius":                ("log₁₀(Radius)",         "log₁₀(Raio)"),
-        "Absolute magnitude(Mv)":    ("Absolute Magnitude (Mv)","Magnitude Absoluta (Mv)"),
+        "Luminosity(L/Lo)":          ("Luminosity (L/Lo)",          "Luminosidade (L/Lo)"),
+        "log_Luminosity":            ("log₁₀(Luminosity)",          "log₁₀(Luminosidade)"),
+        "Radius(R/Ro)":              ("Radius (R/Ro)",              "Raio (R/Ro)"),
+        "log_Radius":                ("log₁₀(Radius)",             "log₁₀(Raio)"),
+        "Absolute magnitude(Mv)":    ("Absolute Magnitude (Mv)",    "Magnitude Absoluta (Mv)"),
+        "log10_Temperature":         ("log₁₀(Temperature) — derivada", "log₁₀(Temperatura)"),
+        "Luminosity_per_Radius2":    ("Luminosity/Radius² — derivada", "L/R² (proxy de temperatura)"),
     }
 
     col_sel, _ = st.columns([2, 3])
@@ -586,6 +639,21 @@ elif secao == "📊 Variáveis Contínuas":
     st.subheader(f"4. Medidas Descritivas — {nome_var}")
     medidas = medidas_descritivas(serie)
     render_medidas(medidas)
+
+    # Separatrizes por tipo estelar
+    st.subheader(f"5. Separatrizes por Tipo Estelar — {nome_var}")
+    ordem_tipos = list(STAR_TYPE_NAMES.values())
+    sep_rows = []
+    for tipo_label in ordem_tipos:
+        s_tipo = df[df["Star type label"] == tipo_label][var_key].dropna()
+        sep_rows.append({
+            "Tipo Estelar": tipo_label,
+            "Q1":           round(s_tipo.quantile(0.25), 4),
+            "Mediana":      round(s_tipo.median(), 4),
+            "Q3":           round(s_tipo.quantile(0.75), 4),
+            "IIQ":          round(s_tipo.quantile(0.75) - s_tipo.quantile(0.25), 4),
+        })
+    st.dataframe(pd.DataFrame(sep_rows), use_container_width=True, hide_index=True)
 
     with st.expander("Interpretações por variável"):
         st.markdown(
@@ -677,14 +745,17 @@ elif secao == "📈 Correlação e Regressão":
     NUM_COLS = [
         "Temperature (K)", "Luminosity(L/Lo)", "Radius(R/Ro)",
         "Absolute magnitude(Mv)", "log_Luminosity", "log_Radius",
+        "log10_Temperature", "Luminosity_per_Radius2",
     ]
     LABELS_LEGIVEL = {
         "Temperature (K)":          "Temperatura (K)",
         "Luminosity(L/Lo)":         "Luminosidade",
         "Radius(R/Ro)":             "Raio",
         "Absolute magnitude(Mv)":   "Magnitude Abs.",
-        "log_Luminosity":           "log₁₀(Luminosidade)",
+        "log_Luminosity":           "log₁₀(Lum.)",
         "log_Radius":               "log₁₀(Raio)",
+        "log10_Temperature":        "log₁₀(Temp.)",
+        "Luminosity_per_Radius2":   "L/R²",
     }
     df_num = df[NUM_COLS].dropna()
     corr   = df_num.corr(method="pearson")
